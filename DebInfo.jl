@@ -1,4 +1,4 @@
-module DebInfo.jl
+module DebInfo
 
 
 export debinfofun
