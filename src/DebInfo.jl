@@ -14,35 +14,36 @@ type ProgressBar
  veha::Int
  veha_fun::Function
  cnt::BigInt
+ enabled::Bool
 end
 export ProgressBar
 
 
 """ progressbar = Progressbar(STDERR, "Progress started:", 10, ".", 100, (cnt)->"[\$cnt]" ) """
-ProgressBar( io::IO, start_msg::AbstractString, step::Int, step_str::AbstractString, veha::Int, veha_fun::Function ) =
-    ProgressBar( io, start_msg, step, step_str, veha, veha_fun, 0 )
+ProgressBar( io::IO, start_msg::AbstractString, step::Int, step_str::AbstractString, veha::Int, veha_fun::Function; enabled::Bool=true ) =
+    ProgressBar( io, start_msg, step, step_str, veha, veha_fun, 0, enabled )
 
 """ progressbar = Progressbar( "Progress started:", 10, ".", 100, (cnt)->"[\$cnt]" ) """
-ProgressBar( start_msg::AbstractString, step::Int, step_str::AbstractString, veha::Int, veha_fun::Function ) =
-    ProgressBar( STDERR, start_msg, step, step_str, veha, veha_fun, 0 )
+ProgressBar( start_msg::AbstractString, step::Int, step_str::AbstractString, veha::Int, veha_fun::Function; enabled::Bool=true ) =
+    ProgressBar( STDERR, start_msg, step, step_str, veha, veha_fun, 0, enabled )
 
 
 """ progressbar = ProgressBar(STDERR, "Progess:", 10=>"-", 100=>"100") """
-ProgressBar{I<:Int,S<:AbstractString}( io::IO, start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_str::Pair{I,S}) = 
- ProgressBar( io, start_msg, step_and_str..., veha_and_str[1], (cnt)->veha_and_str[2], 0)
+ProgressBar{I<:Int,S<:AbstractString}( io::IO, start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_str::Pair{I,S}; enabled::Bool=true) = 
+ ProgressBar( io, start_msg, step_and_str..., veha_and_str[1], (cnt)->veha_and_str[2], 0, enabled)
 
 """ progressbar = ProgressBar( "Progess:", 10=>"-", 100=>"100") """
-ProgressBar{I<:Int,S<:AbstractString}( start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_str::Pair{I,S}) = 
- ProgressBar( STDERR, start_msg, step_and_str..., veha_and_str[1], (cnt)->veha_and_str[2], 0)
+ProgressBar{I<:Int,S<:AbstractString}( start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_str::Pair{I,S}; enabled::Bool=true) = 
+ ProgressBar( STDERR, start_msg, step_and_str..., veha_and_str[1], (cnt)->veha_and_str[2], 0, enabled)
 
 
 """ progressbar = Progressbar(STDERR, "Progress started:", 10=>".", 100=>(n)->"[\$n]" ) """    
-ProgressBar{I<:Int,S<:AbstractString}( io::IO, start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_fun::Pair) = 
- ProgressBar( io::IO, start_msg, step_and_str..., veha_and_fun..., 0)
+ProgressBar{I<:Int,S<:AbstractString}( io::IO, start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_fun::Pair; enabled::Bool=true) = 
+ ProgressBar( io::IO, start_msg, step_and_str..., veha_and_fun..., 0, enabled)
 
 """ progressbar = Progressbar( "Progress started:", 10=>".", 100=>(n)->"[\$n]" ) """    
-ProgressBar{I<:Int,S<:AbstractString}( start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_fun::Pair) = 
- ProgressBar( STDERR, start_msg, step_and_str..., veha_and_fun..., 0)
+ProgressBar{I<:Int,S<:AbstractString}( start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_fun::Pair; enabled::Bool=true) = 
+ ProgressBar( STDERR, start_msg, step_and_str..., veha_and_fun..., 0, enabled)
 
 
 """
@@ -56,14 +57,14 @@ for i in 1:100 goprogress(progressbar) end
 """
 function goprogress(p::ProgressBar)
  if p.cnt==0 
-  print( p.io, p.start_msg)
+  p.enabled && print( p.io, p.start_msg)
   p.cnt+=1
  else
   p.cnt+=1
   if p.cnt % p.veha == 0
-   print( p.io, p.veha_fun(p.cnt))
+   p.enabled && print( p.io, p.veha_fun(p.cnt))
   elseif p.cnt % p.step == 0
-   print( p.io, p.step_str)
+   p.enabled && print( p.io, p.step_str)
   end
  end
  p.cnt
@@ -87,14 +88,25 @@ ok(progressbar , "Success!")
 
 n>5 ? ok(progressbar) : err(progressbar)
 """
-ok(p::ProgressBar, msg::AbstractString="[ok]") = print_with_color(:green, p.io, msg)
+ok(p::ProgressBar, msg::AbstractString="[ok]") = p.enabled && print_with_color(:green, p.io, msg)
 export ok
 
 """ err(progressbar)
 
 err(progressbar, "something wrong...") """
-err(p::ProgressBar, msg::AbstractString="[error]") = print_with_color(:red, p.io, msg)
+err(p::ProgressBar, msg::AbstractString="[error]") = p.enabled && print_with_color(:red, p.io, msg)
 export err
+
+
+""" reset_progress( progressbar)
+
+OR
+
+reset_progress( progressbar, "try again:")
+"""
+reset_progress(p::ProgressBar, new_start_msg::AbstractString) = ( p.start_msg = new_start_msg; p.cnt=0; nothing )
+reset_progress(p::ProgressBar) = (p.cnt=0; nothing)
+export reset_progress
 
 """
 julia> infoiter( x->x*2, [1,2,3], ()->print(STDERR,"#") ) |>collect
