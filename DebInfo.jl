@@ -93,4 +93,22 @@ end
 """ [1,2,3] |> cooliter(x->x*2, "Iter A") """
 cooliter( pred::Function, debugprefix::AbstractString ) = initer->cooliter( initer, pred, debugprefix )
 
+
+""" cooliter([1,2,3], x->x*2) # without any debug/info """
+cooliter( initer, pred::Function) = (pred(i) for i in initer)
+
+
+""" [1,2,3] |> cooliter(x->x*2) # without any debug/info """
+cooliter( pred::Function) = initer->cooliter( initer, pred)
+
 end # module
+
+
+
+
+
+
+
+
+
+
