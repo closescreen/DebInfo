@@ -7,6 +7,7 @@ export statinfofun
 statinfofun(on::Bool) = on ? (x...)->info(x...) : (x...)->nothing
 
 type ProgressBar
+ io::IO
  start_msg::AbstractString
  step::Int
  step_str::AbstractString
@@ -16,17 +17,33 @@ type ProgressBar
 end
 export ProgressBar
 
-""" progressbar = Progressbar("Progress started:", 10, ".", 100, (cnt)->"[\$cnt]" ) """
+
+""" progressbar = Progressbar(STDERR, "Progress started:", 10, ".", 100, (cnt)->"[\$cnt]" ) """
+ProgressBar( io::IO, start_msg::AbstractString, step::Int, step_str::AbstractString, veha::Int, veha_fun::Function ) =
+    ProgressBar( io, start_msg, step, step_str, veha, veha_fun, 0 )
+
+""" progressbar = Progressbar( "Progress started:", 10, ".", 100, (cnt)->"[\$cnt]" ) """
 ProgressBar( start_msg::AbstractString, step::Int, step_str::AbstractString, veha::Int, veha_fun::Function ) =
-    ProgressBar( start_msg, step, step_str, veha, veha_fun, 0 )
+    ProgressBar( STDERR, start_msg, step, step_str, veha, veha_fun, 0 )
 
-""" progressbar = ProgressBar("Progess:", 10=>"-", 100=>"100") """
+
+""" progressbar = ProgressBar(STDERR, "Progess:", 10=>"-", 100=>"100") """
+ProgressBar{I<:Int,S<:AbstractString}( io::IO, start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_str::Pair{I,S}) = 
+ ProgressBar( io, start_msg, step_and_str..., veha_and_str[1], (cnt)->veha_and_str[2], 0)
+
+""" progressbar = ProgressBar( "Progess:", 10=>"-", 100=>"100") """
 ProgressBar{I<:Int,S<:AbstractString}( start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_str::Pair{I,S}) = 
- ProgressBar( start_msg, step_and_str..., veha_and_str[1], (cnt)->veha_and_str[2], 0)
+ ProgressBar( STDERR, start_msg, step_and_str..., veha_and_str[1], (cnt)->veha_and_str[2], 0)
 
-""" progressbar = Progressbar("Progress started:", 10=>".", 100=>(n)->"[\$n]" ) """    
+
+""" progressbar = Progressbar(STDERR, "Progress started:", 10=>".", 100=>(n)->"[\$n]" ) """    
+ProgressBar{I<:Int,S<:AbstractString}( io::IO, start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_fun::Pair) = 
+ ProgressBar( io::IO, start_msg, step_and_str..., veha_and_fun..., 0)
+
+""" progressbar = Progressbar( "Progress started:", 10=>".", 100=>(n)->"[\$n]" ) """    
 ProgressBar{I<:Int,S<:AbstractString}( start_msg::AbstractString, step_and_str::Pair{I,S}, veha_and_fun::Pair) = 
- ProgressBar( start_msg, step_and_str..., veha_and_fun..., 0)
+ ProgressBar( STDERR, start_msg, step_and_str..., veha_and_fun..., 0)
+
 
 """
 using DebInfo
@@ -39,14 +56,14 @@ for i in 1:100 goprogress(progressbar) end
 """
 function goprogress(p::ProgressBar)
  if p.cnt==0 
-  print(STDERR, p.start_msg)
+  print( p.io, p.start_msg)
   p.cnt+=1
  else
   p.cnt+=1
   if p.cnt % p.veha == 0
-   print(STDERR, p.veha_fun(p.cnt))
+   print( p.io, p.veha_fun(p.cnt))
   elseif p.cnt % p.step == 0
-   print(STDERR, p.step_str)
+   print( p.io, p.step_str)
   end
  end
  p.cnt
@@ -70,13 +87,13 @@ ok(progressbar , "Success!")
 
 n>5 ? ok(progressbar) : err(progressbar)
 """
-ok(p::ProgressBar, msg::AbstractString="[ok]") = print_with_color(:green, msg)
+ok(p::ProgressBar, msg::AbstractString="[ok]") = print_with_color(:green, p.io, msg)
 export ok
 
 """ err(progressbar)
 
 err(progressbar, "something wrong...") """
-err(p::ProgressBar, msg::AbstractString="[error]") = print_with_color(:red, msg)
+err(p::ProgressBar, msg::AbstractString="[error]") = print_with_color(:red, p.io, msg)
 export err
 
 """
