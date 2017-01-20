@@ -91,7 +91,17 @@ function infoiter( pred::Function, initer, foreachfun::Function )
 end
 export infoiter
 
-""" [1,2,3] |> infoiter(x->x*2, ()->print(STDERR,"#")) """
+""" [1,2,3] |> infoiter(x->x*2, ()->print(STDERR,"#")) 
+
+OR
+
+julia> progressbar = ProgressBar( "|", 1=>"-", 5=>n->"|\$n|" )
+
+julia> 1:20|> infoiter( x->x*2, go(progressbar) )|>collect;
+
+|---|5|----|10|----|15|----|20|
+
+"""
 infoiter( pred::Function, foreachfun::Function ) = initer->infoiter( pred, initer, foreachfun )
 
 """
