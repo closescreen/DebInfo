@@ -108,6 +108,14 @@ reset_progress(p::ProgressBar, new_start_msg::AbstractString) = ( p.start_msg = 
 reset_progress(p::ProgressBar) = (p.cnt=0; nothing)
 export reset_progress
 
+""" disable( p::ProgressBar) = p.enabled=false """
+disable( p::ProgressBar) = p.enabled=false
+
+
+""" enable( progressbar ) """
+enable(p::ProgressBar) = p.enabled=true
+
+
 """
 julia> infoiter( x->x*2, [1,2,3], ()->print(STDERR,"#") ) |>collect
 ###3-element Array{Int64,1}:
