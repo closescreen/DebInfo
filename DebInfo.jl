@@ -58,4 +58,39 @@ const goprogress = go
 export goprogress
 
 
+""" 
+julia> cooliter([1,2,3], x->x*2, ()->write(STDERR,"#") ) |>collect
+###3-element Array{Int64,1}:
+ 2
+ 4
+ 6
+"""
+function cooliter( initer, pred::Function, foreachfun::Function )
+ ( begin rv=pred(el); foreachfun(); rv end for el in initer )
+end
+export cooliter
+
+""" [1,2,3] |> cooliter(x->x*2, ()->write(STDERR,"#")) """
+cooliter( pred::Function, foreachfun::Function ) = initer->cooliter( initer, pred, foreachfun )
+
+"""
+julia> cooliter([1,2,3], x->x*2, "Iter A") |>collect
+INFO: Iter A In: 1
+INFO: Iter A Out: 2
+INFO: Iter A In: 2
+INFO: Iter A Out: 4
+INFO: Iter A In: 3
+INFO: Iter A Out: 6
+3-element Array{Int64,1}:
+ 2
+ 4
+ 6
+"""
+function cooliter( initer, pred::Function, debugprefix::AbstractString )
+ ( begin info( "$debugprefix In: $el" ); rv=pred(el); info( "$debugprefix Out: $rv"); rv end for el in initer )
+end
+
+""" [1,2,3] |> cooliter(x->x*2, "Iter A") """
+cooliter( pred::Function, debugprefix::AbstractString ) = initer->cooliter( initer, pred, debugprefix )
+
 end # module
