@@ -49,8 +49,8 @@ ProgressBar{I<:Int,S<:AbstractString}( start_msg::AbstractString, step_and_str::
 """
 using DebInfo
 
-progressbar = ProgressBar("|",1=>"#",10=>n->"[\$n]")
-DebInfo.ProgressBar("|",1,"#",10,#1,0)
+progressbar = ProgressBar(\"|\",1=>\"#\",10=>n->"[\$n]")
+DebInfo.ProgressBar(\"|\",1,\"#\",10,#1,0)
 
 for i in 1:100 goprogress(progressbar) end
 |########[10]#########[20]#########[30]#########[40]#########[50]#########[60]#########[70]#########[80]#########[90]#########[100]
@@ -72,7 +72,7 @@ end
 export goprogress
 
 """ 
-progressbar = ProgressBar("|",1=>"#",10=>n->"[\$n]")
+progressbar = ProgressBar(\"|\",1=>\"#\",10=>n->\"[\$n]\")
 
 advans::Function = go(progressbar) # returns ()->goprogress(progressbar)
 
@@ -84,7 +84,7 @@ export go
 
 """ ok(progressbar) 
 
-ok(progressbar , "Success!") 
+ok(progressbar , \"Success!\") 
 
 n>5 ? ok(progressbar) : err(progressbar)
 """
@@ -93,7 +93,7 @@ export ok
 
 """ err(progressbar)
 
-err(progressbar, "something wrong...") """
+err(progressbar, \"something wrong...\") """
 err(p::ProgressBar, msg::AbstractString="[error]") = p.enabled && print_with_color(:red, p.io, msg)
 export err
 
@@ -102,7 +102,7 @@ export err
 
 OR
 
-reset_progress( progressbar, "try again:")
+reset_progress( progressbar, \"try again:\")
 """
 reset_progress(p::ProgressBar, new_start_msg::AbstractString) = ( p.start_msg = new_start_msg; p.cnt=0; nothing )
 reset_progress(p::ProgressBar) = (p.cnt=0; nothing)
@@ -117,7 +117,7 @@ enable(p::ProgressBar) = p.enabled=true
 
 
 """
-julia> infoiter( x->x*2, [1,2,3], ()->print(STDERR,"#") ) |>collect
+julia> infoiter( x->x*2, [1,2,3], ()->print(STDERR,\"#\") ) |>collect
 ###3-element Array{Int64,1}:
  2
  4
@@ -128,21 +128,26 @@ function infoiter( pred::Function, initer, foreachfun::Function )
 end
 export infoiter
 
-""" [1,2,3] |> infoiter(x->x*2, ()->print(STDERR,"#")) 
+function infoiter( pred::Function, filterin::Function, initer, foreachfun::Function )
+ ( begin rv=pred(el); foreachfun(); rv end for el in filter( filterin, initer) )
+end
 
-OR
 
-julia> progressbar = ProgressBar( "|", 1=>"-", 5=>n->"|\$n|" )
-
-julia> 1:20|> infoiter( x->x*2, go(progressbar) )|>collect;
-
-|---|5|----|10|----|15|----|20|
+#""" [1,2,3] |> infoiter(x->x*2, ()->print(STDERR,\"#\")) 
+#
+#OR
+#
+#julia> progressbar = ProgressBar( \"|\", 1=>\"-\", 5=>n->\"|\$n|\" )
+#
+#julia> 1:20|> infoiter( x->x*2, go(progressbar) )|>collect;
+#
+#|---|5|----|10|----|15|----|20|
+#
+#"""
+#infoiter( pred::Function, foreachfun::Function ) = initer->infoiter( pred, initer, foreachfun )
 
 """
-infoiter( pred::Function, foreachfun::Function ) = initer->infoiter( pred, initer, foreachfun )
-
-"""
-julia> infoiter( x->x*2, [1,2,3], "Iter A") |>collect
+julia> infoiter( x->x*2, [1,2,3], \"Iter A\") |>collect
 INFO: Iter A In: 1
 INFO: Iter A Out: 2
 INFO: Iter A In: 2
@@ -154,20 +159,33 @@ INFO: Iter A Out: 6
  4
  6
 """
+function infoiter( pred::Function, filterin::Function, initer, debugprefix::AbstractString )
+ ( begin info( "$debugprefix In: $el" ); rv=pred(el); info( "$debugprefix Out: $rv"); rv end for el in filter( filterin, initer) )
+end
+
 function infoiter( pred::Function, initer, debugprefix::AbstractString )
  ( begin info( "$debugprefix In: $el" ); rv=pred(el); info( "$debugprefix Out: $rv"); rv end for el in initer )
 end
 
-""" [1,2,3] |> infoiter(x->x*2, "Iter A") """
+
+""" [1,2,3] |> infoiter(x->x*2, \"Iter A\") """
 infoiter( pred::Function, debugprefix::AbstractString ) = initer->infoiter( pred, initer, debugprefix )
+
+infoiter( pred::Function, filterin::Function, debugprefix::AbstractString ) = initer->infoiter( pred, filter( filterin, initer), debugprefix )
 
 
 """ infoiter( x->x*2, [1,2,3]) # without any debug/info """
 infoiter(  pred::Function, initer) = (pred(i) for i in initer)
 
+infoiter(  pred::Function, filterin::Function, initer) = (pred(i) for i in filter( filterin, initer))
+
+
 
 """ [1,2,3] |> infoiter(x->x*2) # without any debug/info """
 infoiter( pred::Function) = initer->infoiter( pred, initer)
+
+infoiter( pred::Function, filterin::Function) = initer->infoiter( pred, filter( filterin, iter))
+
 
 end # module
 
