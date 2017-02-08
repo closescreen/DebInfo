@@ -186,6 +186,52 @@ infoiter( pred::Function) = initer->infoiter( pred, initer)
 
 infoiter( pred::Function, filterin::Function) = initer->infoiter( pred, filter( filterin, iter))
 
+# ---------------- checking() --------------------------
+typealias MayBeFunc  Union{Function,Void}
+export checking
+"""
+"""
+function checking( description::AbstractString, action::Function, must_be::Function; 
+                ok::MayBeFunc=nothing, ok_desc::MayBeFunc=nothing, 
+                not::MayBeFunc=nothing, not_desc::MayBeFunc=nothing,
+                debug::Bool=true, warn_on_true::Bool=false, warn_on_false::Bool=false, dump_rv::Bool=false )
+
+ debug && print_with_color( :blue, STDERR, description, "... " )
+ rv = action()
+ if must_be(rv)
+    if warn_on_true
+        warn( "$description - YES" )
+        dump_rv && warn("rv=$rv")
+    elseif debug
+        print_with_color( :blue, STDERR, "OK\n")
+    end
+    if typeof(ok)<:Function
+        if debug || warn_on_true
+            msg = typeof(ok_desc)<:Function ? string(ok_desc(rv)) : "return ok(rv)"
+            print_with_color( :blue, STDERR, msg, "\n")
+        end
+        return ok(rv)
+    end
+    return rv # -without ok(rv)
+ else # must_be returned false
+    if warn_on_false
+        warn( "$description - NO" )
+        dump_rv && warn("rv=$rv")
+    elseif debug
+        print_with_color( :blue, STDERR, "NO\n" )
+    end
+    if typeof(not)<:Function
+        if debug || warn_on_false
+            msg = typeof(not_desc)<:Function ? string(not_desc(rv)) : "return not(rv)"
+            print_with_color( :blue, STDERR, msg, "\n" )
+        end
+        return not(rv)
+    end
+    return rv # -without not(rv)
+ end
+end
+
+
 
 end # module
 
